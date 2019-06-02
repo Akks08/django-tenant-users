@@ -79,9 +79,9 @@ class TenantBase(TenantMixin):
 
         super(TenantBase, self).save(*args, **kwargs)
 
-    def delete(self, force_drop=False, *args, **kwargs):
+    def delete(self, force_drop=False):
         if force_drop:
-            super().delete(force_drop, *args, **kwargs)
+            super(TenantBase, self).delete(force_drop=True)
         else:
             raise DeleteError("Not supported -- delete_tenant() should be used.")
 
@@ -238,8 +238,6 @@ class UserProfileManager(BaseUserManager):
         profile.is_active = True
         profile.is_verified = is_verified
         profile.set_password(password)
-        for attr, value in extra_fields.items():
-            setattr(profile, attr, value)
         profile.save()
 
         # Get public tenant tenant and link the user (no perms)
@@ -335,9 +333,9 @@ class UserProfile(AbstractBaseUser, PermissionsMixinFacade):
     def has_verified_email(self):
         return self.is_verified == True
 
-    def delete(self, force_drop=False, *args, **kwargs):
+    def delete(self, force_drop=False):
         if force_drop:
-            super().delete(*args, **kwargs)
+            super(UserProfile, self).delete(force_drop=True)
         else:
             raise DeleteError("UserProfile.objects.delete_user() should be used.")
 
@@ -349,3 +347,7 @@ class UserProfile(AbstractBaseUser, PermissionsMixinFacade):
 
     def get_full_name(self):
         return str(self)  # just use __unicode__ here.
+
+
+class TenantUser(UserProfile):
+    pass

@@ -1,6 +1,7 @@
-from .models import TenantUser
+from django.contrib import admin
 
-from tenant_users.permissions.models import UserTenantPermissions
+from .models import UserTenantPermissions
+
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.options import IS_POPUP_VAR
@@ -21,13 +22,37 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
 
+from tenants.models import TenantUser
+
 csrf_protect_m = method_decorator(csrf_protect)
 sensitive_post_parameters_m = method_decorator(sensitive_post_parameters())
 
 
 @admin.register(TenantUser)
 class UserProfileAdmin(admin.ModelAdmin):
+    change_user_password_template = None
+    form = UserChangeForm
+    add_form = UserCreationForm
     change_password_form = AdminPasswordChangeForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Use special form during user creation
+        """
+        defaults = {}
+        if obj is None:
+            defaults['form'] = self.add_form
+        defaults.update(kwargs)
+        return super().get_form(request, obj, **defaults)
+
+    def get_urls(self):
+        return [
+            path(
+                '<id>/password/',
+                self.admin_site.admin_view(self.user_change_password),
+                name='auth_user_password_change',
+            ),
+        ] + super().get_urls()
 
     @sensitive_post_parameters_m
     def user_change_password(self, request, id, form_url=''):
